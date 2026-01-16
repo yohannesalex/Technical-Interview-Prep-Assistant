@@ -1,0 +1,19 @@
+fastapi==0.109.0
+uvicorn==0.27.0
+# Lightweight dependencies - no PyTorch needed for basic operation
+# sentence-transformers will be installed separately with --no-deps
+pymupdf==1.23.8
+python-docx==1.1.0
+python-multipart==0.0.6
+sqlalchemy==2.0.25
+tiktoken==0.5.2
+pydantic==2.5.3
+pydantic-settings==2.1.0
+aiosqlite==0.19.0
+requests==2.31.0
+numpy==1.26.3
+scikit-learn==1.4.0
+# For embeddings - lighter alternative
+transformers==4.36.2
+tokenizers==0.15.0
+huggingface-hub==0.20.2
