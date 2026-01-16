@@ -1,0 +1,69 @@
+"""
+Configuration settings for the RAG Interview Assistant.
+All configurable parameters are centralized here for easy adjustment.
+
+IMPORTANT: This is a template file. Copy this to config.py and add your API key.
+"""
+import os
+from pathlib import Path
+
+# Base directories
+BASE_DIR = Path(__file__).parent
+DATA_DIR = BASE_DIR.parent / "data"
+INDEX_DIR = BASE_DIR.parent / "index"
+LOGS_DIR = BASE_DIR.parent / "logs"
+
+# Ensure directories exist
+DATA_DIR.mkdir(exist_ok=True)
+INDEX_DIR.mkdir(exist_ok=True)
+LOGS_DIR.mkdir(exist_ok=True)
+
+# Chunking configuration
+CHUNK_SIZE = 500  # tokens (adjustable: 400-600 recommended)
+CHUNK_OVERLAP = 100  # tokens (~20% overlap)
+CHUNK_MIN_SIZE = 50  # minimum chunk size to avoid tiny fragments
+
+# Retrieval configuration
+TOP_K = 12  # number of chunks to retrieve
+RERANK_ENABLED = False  # enable cross-encoder reranking (slower but more accurate)
+SIMILARITY_THRESHOLD = 0.3  # minimum similarity score for retrieval
+
+# Embedding model
+EMBEDDING_MODEL = "all-MiniLM-L6-v2"  # SentenceTransformers model
+EMBEDDING_DIMENSION = 384  # dimension of the embedding model
+BATCH_SIZE = 32  # batch size for embedding generation
+
+# LLM configuration - Using OpenRouter API
+# OpenRouter provides access to multiple high-performance models
+OPENROUTER_API_KEY = "YOUR_API_KEY_HERE"  # Replace with your actual API key
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+# Recommended models for RAG (sorted by performance/cost):
+# - "anthropic/claude-3.5-sonnet" (best quality, excellent at following instructions)
+# - "openai/gpt-4-turbo" (great quality, good speed)
+# - "google/gemini-pro-1.5" (good quality, fast, cost-effective)
+# - "meta-llama/llama-3.1-70b-instruct" (good open-source option)
+# - "mistralai/mistral-large" (good balance)
+OPENROUTER_MODEL = "anthropic/claude-3.5-sonnet"  # Best for citation accuracy
+
+LLM_TEMPERATURE = 0.1  # low temperature for factual responses
+LLM_MAX_TOKENS = 1000  # maximum tokens in LLM response
+
+# Verification configuration
+FAITHFULNESS_THRESHOLD = 0.8  # minimum faithfulness score (0-1)
+VERIFICATION_ENABLED = True  # enable post-generation verification
+
+# Database
+DATABASE_URL = f"sqlite:///{BASE_DIR.parent / 'index' / 'metadata.db'}"
+
+# File upload
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB max file size
+ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
+
+# Supported material types
+MATERIAL_TYPES = ["lecture", "textbook", "notes", "assignment", "lab", "exam"]
+
+# API configuration
+API_HOST = "0.0.0.0"
+API_PORT = 8000
+CORS_ORIGINS = ["http://localhost:5173", "http://localhost:3000"]  # Vite and CRA defaults
