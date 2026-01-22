@@ -9,23 +9,21 @@ sys.path.append('..')
 from config import CORS_ORIGINS
 from db import init_db
 from api.endpoints import ask, materials, source, logs, admin, chat, files
-
+from retrieval import get_vector_store
+from llm import get_ollama_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
-    # Startup
     print("Initializing database...")
     init_db()
     print("Database initialized")
     
     yield
     
-    # Shutdown
     print("Shutting down...")
 
 
-# Create FastAPI app
 app = FastAPI(
     title="RAG Interview Assistant API",
     description="API for checking answers against course materials locally.",
@@ -33,7 +31,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
@@ -42,7 +39,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
 app.include_router(ask.router, tags=["Q&A"])
 app.include_router(chat.router, tags=["Chat"])
 app.include_router(materials.router, tags=["Materials"])
@@ -71,9 +67,6 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """Health check endpoint."""
-    from retrieval import get_vector_store
-    from llm import get_ollama_client
     
     vector_store = get_vector_store()
     ollama = get_ollama_client()
