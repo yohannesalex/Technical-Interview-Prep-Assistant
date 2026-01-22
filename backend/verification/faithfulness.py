@@ -6,9 +6,9 @@ from typing import List, Dict, Tuple
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import sys
-sys.path.append('..')
 from config import EMBEDDING_MODEL
 
+sys.path.append('..')
 
 class FaithfulnessChecker:
     """Check if generated answer is faithful to retrieved context."""
