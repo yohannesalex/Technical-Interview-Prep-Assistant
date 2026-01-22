@@ -1,10 +1,11 @@
 # Technical Interview Preparation Assistant
 
-A fully local RAG (Retrieval-Augmented Generation) system for technical interview preparation. This system answers questions using only your course materials, provides explicit citations, and includes a verification layer to ensure answer faithfulness.
+A RAG (Retrieval-Augmented Generation) system for technical interview preparation. This system answers questions using only your course materials, provides explicit citations, and includes a verification layer to ensure answer faithfulness.
 
 ## ✨ Features
 
-- **Fully Local**: No cloud APIs, no external dependencies, complete privacy
+- **Private Document Storage**: Your documents are processed and stored locally
+- **Cloud LLM Integration**: Uses OpenRouter API for high-quality answer generation
 - **Multi-Format Support**: PDF, DOCX, TXT, MD files
 - **Smart Retrieval**: FAISS vector search with metadata filtering
 - **Citation Required**: Every answer includes explicit source citations
@@ -20,12 +21,12 @@ Backend (Python/FastAPI)
 ├── Intelligent Chunking (section-aware, configurable)
 ├── Embedding Generation (SentenceTransformers)
 ├── Vector Search (FAISS)
-├── LLM Generation (Ollama - local)
+├── LLM Generation (OpenRouter API)
 ├── Verification Layer (faithfulness checking)
 └── SQLite Database (metadata & logs)
 
 Frontend (React/Vite)
-├── Ask Page (query with filters)
+├── Chat Interface (conversational Q&A)
 ├── Materials Browser (upload/manage)
 └── Verification View (detailed reports)
 ```
@@ -313,16 +314,17 @@ This project is for educational purposes.
 
 ## 🤝 Contributing
 
-This is a local-only system. Contributions welcome for:
+Contributions welcome for:
 - Additional file format support
 - Improved chunking strategies
 - Better verification methods
 - UI/UX enhancements
+- Support for additional LLM providers
 
 ## 📧 Support
 
 For issues or questions, please check:
-1. Ollama is running and model is downloaded
+1. OpenRouter API key is correctly configured in `backend/config.py`
 2. Backend and frontend are both running
 3. Materials are properly uploaded
 4. Configuration is correct

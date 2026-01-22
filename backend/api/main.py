@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="RAG Interview Assistant API",
-    description="API for checking answers against course materials locally.",
+    description="API for answering technical interview questions using course materials with AI-powered retrieval and verification.",
     version="1.0.0",
     lifespan=lifespan
 )
