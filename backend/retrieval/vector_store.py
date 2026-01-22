@@ -22,9 +22,8 @@ class VectorStore:
             dimension: Dimension of embeddings
         """
         self.dimension = dimension
-        # Use IndexFlatIP for exact cosine similarity (inner product with normalized vectors)
         self.index = faiss.IndexFlatIP(dimension)
-        self.chunk_ids = []  # Maps index position to chunk_id
+        self.chunk_ids = []  
         self.index_dir = Path(INDEX_DIR)
         self.index_dir.mkdir(exist_ok=True)
     
@@ -39,10 +38,8 @@ class VectorStore:
         if embeddings.shape[1] != self.dimension:
             raise ValueError(f"Embedding dimension mismatch: expected {self.dimension}, got {embeddings.shape[1]}")
         
-        # Ensure embeddings are float32
         embeddings = embeddings.astype('float32')
         
-        # Add to FAISS index
         self.index.add(embeddings)
         self.chunk_ids.extend(chunk_ids)
         
@@ -62,21 +59,18 @@ class VectorStore:
         if len(self.chunk_ids) == 0:
             return []
         
-        # Ensure query is 2D and float32
         if query_embedding.ndim == 1:
             query_embedding = query_embedding.reshape(1, -1)
         query_embedding = query_embedding.astype('float32')
         
-        # Search
         k = min(top_k, self.index.ntotal)
         distances, indices = self.index.search(query_embedding, k)
         
-        # Convert to results
         results = []
         for dist, idx in zip(distances[0], indices[0]):
-            if idx < len(self.chunk_ids):  # Valid index
+            if idx < len(self.chunk_ids): 
                 chunk_id = self.chunk_ids[idx]
-                similarity = float(dist)  # Already cosine similarity due to normalized vectors
+                similarity = float(dist) 
                 results.append((chunk_id, similarity))
         
         return results
@@ -91,10 +85,8 @@ class VectorStore:
         index_path = self.index_dir / f"{name}.index"
         metadata_path = self.index_dir / f"{name}_metadata.pkl"
         
-        # Save FAISS index
         faiss.write_index(self.index, str(index_path))
         
-        # Save metadata
         metadata = {
             'chunk_ids': self.chunk_ids,
             'dimension': self.dimension
@@ -121,10 +113,8 @@ class VectorStore:
             print("No saved index found")
             return False
         
-        # Load FAISS index
         self.index = faiss.read_index(str(index_path))
         
-        # Load metadata
         with open(metadata_path, 'rb') as f:
             metadata = pickle.load(f)
         
@@ -145,7 +135,6 @@ class VectorStore:
         return self.index.ntotal
 
 
-# Global vector store instance
 _vector_store_instance = None
 
 
@@ -154,6 +143,5 @@ def get_vector_store() -> VectorStore:
     global _vector_store_instance
     if _vector_store_instance is None:
         _vector_store_instance = VectorStore()
-        # Try to load existing index
         _vector_store_instance.load()
     return _vector_store_instance
