@@ -4,9 +4,9 @@ Optional cross-encoder reranking for improved precision.
 from sentence_transformers import CrossEncoder
 from typing import List, Tuple
 import sys
-sys.path.append('..')
 from config import RERANK_ENABLED
 
+sys.path.append('..')
 
 class Reranker:
     """Rerank retrieved chunks using cross-encoder."""
