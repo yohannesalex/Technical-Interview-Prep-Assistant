@@ -17,7 +17,7 @@ async def reindex(db: Session = Depends(get_db)):
     """
     Rebuild the vector index from all chunks in the database.
     
-    This is useful after deleting materials or if the index becomes corrupted.
+    Note: This is useful for manual index repairs or corruption recovery.
     
     Args:
         db: Database session

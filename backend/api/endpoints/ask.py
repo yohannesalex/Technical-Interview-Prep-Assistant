@@ -140,10 +140,13 @@ async def ask_question(
         # Build context with metadata
         context_chunks = []
         sources_info = []
+        missing_chunks = 0
         
         for chunk_id, score in results:
             chunk = crud.get_chunk(db, chunk_id)
             if not chunk:
+                # Chunk in FAISS but not in DB (index out of sync)
+                missing_chunks += 1
                 continue
             
             context_chunks.append({
@@ -162,6 +165,10 @@ async def ask_question(
                 similarity_score=score,
                 text=chunk.text
             ))
+        
+        # Log if we found missing chunks
+        if missing_chunks > 0:
+            print(f"Warning: Found {missing_chunks} chunks in FAISS but not in database. Index may be out of sync.")
         
         # Create RAG prompt
         prompt = create_rag_prompt(request.question, context_chunks, history=chat_history)
