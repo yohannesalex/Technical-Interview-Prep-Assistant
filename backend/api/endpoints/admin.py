@@ -26,7 +26,6 @@ async def reindex(db: Session = Depends(get_db)):
         Reindex response with statistics
     """
     try:
-        # Get all chunks from database
         all_chunks = db.query(crud.models.Chunk).all()
         
         if not all_chunks:
@@ -36,11 +35,9 @@ async def reindex(db: Session = Depends(get_db)):
                 materials_processed=0
             )
         
-        # Clear existing index
         vector_store = get_vector_store()
         vector_store.clear()
         
-        # Generate embeddings for all chunks
         embedder = get_embedder()
         chunk_texts = [chunk.text for chunk in all_chunks]
         chunk_ids = [chunk.chunk_id for chunk in all_chunks]
@@ -48,14 +45,11 @@ async def reindex(db: Session = Depends(get_db)):
         print(f"Generating embeddings for {len(all_chunks)} chunks...")
         embeddings = embedder.embed_batch(chunk_texts)
         
-        # Add to vector store
         print(f"Adding to vector store...")
         vector_store.add_embeddings(embeddings, chunk_ids)
         
-        # Save index
         vector_store.save()
         
-        # Count unique materials
         materials = db.query(crud.models.Material).all()
         
         return schema.ReindexResponse(
