@@ -8,7 +8,7 @@ import sys
 sys.path.append('../..')
 from db import get_db, crud, schema
 from retrieval import get_embedder, get_vector_store, MetadataFilter, get_reranker
-from llm import get_ollama_client, SYSTEM_PROMPT, create_rag_prompt, extract_refusal_keywords
+from llm import get_llm_client, SYSTEM_PROMPT, create_rag_prompt, extract_refusal_keywords
 from verification import get_faithfulness_checker, get_scorer
 from config import TOP_K, RERANK_ENABLED
 
@@ -52,7 +52,7 @@ async def ask_question(
         embedder = get_embedder()
         vector_store = get_vector_store()
         reranker = get_reranker() if RERANK_ENABLED else None
-        ollama = get_ollama_client()
+        llm_client = get_llm_client()
         faithfulness_checker = get_faithfulness_checker()
         scorer = get_scorer()
         
@@ -167,7 +167,7 @@ async def ask_question(
         prompt = create_rag_prompt(request.question, context_chunks, history=chat_history)
         
         # Generate answer
-        answer = ollama.generate(prompt, system_prompt=SYSTEM_PROMPT)
+        answer = llm_client.generate(prompt, system_prompt=SYSTEM_PROMPT)
         
         # Check for refusal
         if extract_refusal_keywords(answer):
