@@ -235,5 +235,37 @@ async def ask_question(
             confidence=sum(s.similarity_score for s in sources_info) / len(sources_info)
         ))
     
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
+        # Log the full error for debugging
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error in /ask endpoint:\n{error_trace}")
+        
+        # Check for common error types and provide helpful messages
+        error_msg = str(e)
+        
+        if "OpenRouter" in error_msg or "API" in error_msg:
+            raise HTTPException(
+                status_code=503,
+                detail=f"The AI service is currently unavailable. {error_msg}"
+            )
+        elif "embedding" in error_msg.lower():
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to process your question. The embedding service may be unavailable."
+            )
+        elif "database" in error_msg.lower() or "sql" in error_msg.lower():
+            raise HTTPException(
+                status_code=500,
+                detail="Database error occurred. Please try again or contact support if the issue persists."
+            )
+        else:
+            # Generic error
+            raise HTTPException(
+                status_code=500,
+                detail=f"An error occurred while processing your question. Please try again. Error: {error_msg}"
+            )
