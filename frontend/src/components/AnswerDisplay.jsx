@@ -57,28 +57,64 @@ function AnswerDisplay({ answer, faithfulnessScore, verificationStatus, confiden
         return text.split('\n').map((line, lineIdx) => {
             if (line.trim() === '') return <br key={`br-${lineIdx}`} />;
 
-            // Split line by source tags [Source X]
-            const parts = line.split(/(\[Source \d+\])/g);
+            // Split line by source tags [Source X] or [Source X, Source Y, ...]
+            const parts = line.split(/(\[Source\s+(?:\d+(?:,\s*Source\s+\d+)*)\])/g);
 
             return (
                 <p key={lineIdx} style={{ marginBottom: '0.5rem' }}>
                     {parts.map((part, partIdx) => {
-                        const match = part.match(/\[Source (\d+)\]/);
-                        if (match) {
-                            const sourceNum = parseInt(match[1]);
-                            const source = sources && sources[sourceNum - 1];
-                            if (source) {
+                        // Check if this part is a citation (single or multiple)
+                        const citationMatch = part.match(/\[Source\s+((?:\d+(?:,\s*Source\s+\d+)*))\]/);
+                        if (citationMatch) {
+                            // Extract all source numbers from the citation
+                            const sourceNumbers = citationMatch[1].match(/\d+/g).map(num => parseInt(num));
+                            
+                            // If only one source, render as before
+                            if (sourceNumbers.length === 1) {
+                                const sourceNum = sourceNumbers[0];
+                                const source = sources && sources[sourceNum - 1];
+                                if (source) {
+                                    return (
+                                        <a
+                                            key={partIdx}
+                                            className="citation-link"
+                                            href={buildPreviewUrl(source)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            title={`Verify with ${source.material_title}`}
+                                        >
+                                            {part}
+                                        </a>
+                                    );
+                                }
+                            } else {
+                                // Multiple sources - render each as a separate link
                                 return (
-                                    <a
-                                        key={partIdx}
-                                        className="citation-link"
-                                        href={buildPreviewUrl(source)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        title={`Verify with ${source.material_title}`}
-                                    >
-                                        {part}
-                                    </a>
+                                    <span key={partIdx}>
+                                        [
+                                        {sourceNumbers.map((sourceNum, idx) => {
+                                            const source = sources && sources[sourceNum - 1];
+                                            if (source) {
+                                                return (
+                                                    <span key={idx}>
+                                                        <a
+                                                            className="citation-link"
+                                                            href={buildPreviewUrl(source)}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            title={`Verify with ${source.material_title}`}
+                                                        >
+                                                            Source {sourceNum}
+                                                        </a>
+                                                        {idx < sourceNumbers.length - 1 ? ', ' : ''}
+                                                    </span>
+                                                );
+                                            } else {
+                                                return <span key={idx}>Source {sourceNum}{idx < sourceNumbers.length - 1 ? ', ' : ''}</span>;
+                                            }
+                                        })}
+                                        ]
+                                    </span>
                                 );
                             }
                         }
