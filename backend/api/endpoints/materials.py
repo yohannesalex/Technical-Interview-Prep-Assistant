@@ -48,9 +48,19 @@ async def ingest_material(
         # Validate file extension
         file_ext = Path(file.filename).suffix.lower()
         if file_ext not in ALLOWED_EXTENSIONS:
+            allowed_list = ", ".join(ALLOWED_EXTENSIONS)
             raise HTTPException(
                 status_code=400,
-                detail=f"Unsupported file type: {file_ext}. Allowed: {ALLOWED_EXTENSIONS}"
+                detail=f"Unsupported file type '{file_ext}'. Please upload one of: {allowed_list}"
+            )
+        
+        # Check file size (basic validation)
+        if hasattr(file, 'size') and file.size and file.size > MAX_FILE_SIZE:
+            size_mb = file.size / (1024 * 1024)
+            max_mb = MAX_FILE_SIZE / (1024 * 1024)
+            raise HTTPException(
+                status_code=400,
+                detail=f"File too large ({size_mb:.1f}MB). Maximum size allowed: {max_mb:.0f}MB"
             )
         
         # We've removed the strict check for config.MATERIAL_TYPES to allow simplified uploads
@@ -73,7 +83,16 @@ async def ingest_material(
         
         # Parse document
         print(f"Parsing {file.filename}...")
-        sections = DocumentParser.parse(str(file_path))
+        try:
+            sections = DocumentParser.parse(str(file_path))
+        except Exception as parse_error:
+            # Clean up uploaded file on parse error
+            if file_path.exists():
+                file_path.unlink()
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to parse file '{file.filename}'. The file may be corrupted or in an unsupported format. Error: {str(parse_error)}"
+            )
         
         # Extract base metadata
         base_metadata = MetadataExtractor.extract_from_filename(
@@ -97,6 +116,13 @@ async def ingest_material(
             all_chunks.extend(chunks)
         
         print(f"Created {len(all_chunks)} chunks")
+        
+        # Validate we got chunks
+        if not all_chunks:
+            raise HTTPException(
+                status_code=400,
+                detail=f"No text content could be extracted from '{file.filename}'. The file may be empty or contain only images."
+            )
         
         # Generate embeddings
         print(f"Generating embeddings...")
