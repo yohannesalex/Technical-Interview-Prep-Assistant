@@ -6,8 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import sys
 sys.path.append('..')
-from config import CORS_ORIGINS
+from config import CORS_ORIGINS, RERANK_ENABLED
 from db import init_db
+from retrieval import get_embedder, get_vector_store, get_reranker
 from api.endpoints import ask, materials, source, logs, admin, chat, files
 from retrieval import get_vector_store
 from llm import get_ollama_client
@@ -18,6 +19,14 @@ async def lifespan(app: FastAPI):
     print("Initializing database...")
     init_db()
     print("Database initialized")
+    
+    # Preload models
+    print("Preloading retrieval models...")
+    get_embedder()
+    get_vector_store()
+    if RERANK_ENABLED:
+        get_reranker()
+    print("Models loaded")
     
     yield
     

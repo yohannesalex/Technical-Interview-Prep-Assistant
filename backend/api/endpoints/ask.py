@@ -7,10 +7,10 @@ from typing import List, Optional
 import sys
 sys.path.append('../..')
 from db import get_db, crud, schema
-from retrieval import get_embedder, get_vector_store, MetadataFilter
+from retrieval import get_embedder, get_vector_store, MetadataFilter, get_reranker
 from llm import get_ollama_client, SYSTEM_PROMPT, create_rag_prompt, extract_refusal_keywords
 from verification import get_faithfulness_checker, get_scorer
-from config import TOP_K
+from config import TOP_K, RERANK_ENABLED
 
 router = APIRouter()
 
@@ -51,6 +51,7 @@ async def ask_question(
         # Get components
         embedder = get_embedder()
         vector_store = get_vector_store()
+        reranker = get_reranker() if RERANK_ENABLED else None
         ollama = get_ollama_client()
         faithfulness_checker = get_faithfulness_checker()
         scorer = get_scorer()
@@ -72,7 +73,8 @@ async def ask_question(
         
         # Retrieve chunks
         top_k = request.top_k or TOP_K
-        results = vector_store.search(query_embedding, top_k=top_k * 2)  # Get more for filtering
+        initial_k = top_k * 3 if RERANK_ENABLED else top_k * 2
+        results = vector_store.search(query_embedding, top_k=initial_k)
         
         # Helper to save assistant response and return
         def save_and_return(response: schema.QueryResponse):
@@ -107,6 +109,23 @@ async def ask_question(
             )
         
         # Limit to top_k after filtering
+        # Rerank results if enabled
+        if RERANK_ENABLED and results and reranker:
+            print(f"Reranking {len(results)} chunks...")
+            # Fetch text for candidates to rerank
+            candidates = []
+            for chunk_id, score in results:
+                chunk = crud.get_chunk(db, chunk_id)
+                if chunk:
+                    candidates.append((chunk_id, chunk.text, float(score)))
+            
+            # Apply cross-encoder reranking
+            reranked_tuples = reranker.rerank(retrieval_query, candidates)
+            
+            # Update results with reranked scores
+            results = [(c_id, score) for c_id, _, score in reranked_tuples]
+
+        # Limit to top_k after filtering and reranking
         results = results[:top_k]
         
         if not results:
