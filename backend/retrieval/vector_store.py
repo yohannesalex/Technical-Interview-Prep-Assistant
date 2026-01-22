@@ -7,9 +7,9 @@ import pickle
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 import sys
-sys.path.append('..')
 from config import INDEX_DIR, EMBEDDING_DIMENSION
 
+sys.path.append('..')
 
 class VectorStore:
     """FAISS-based vector store for semantic search."""
