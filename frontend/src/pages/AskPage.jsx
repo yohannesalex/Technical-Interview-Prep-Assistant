@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import QuestionInput from '../components/QuestionInput'
 import FilterPanel from '../components/FilterPanel'
 import AnswerDisplay from '../components/AnswerDisplay'
@@ -9,6 +9,22 @@ function AskPage({ onQueryResult }) {
     const [result, setResult] = useState(null)
     const [error, setError] = useState(null)
     const [filters, setFilters] = useState({})
+    const [materials, setMaterials] = useState([])
+
+    useEffect(() => {
+        const loadMaterials = async () => {
+            try {
+                const response = await fetch('/api/materials')
+                if (!response.ok) return
+                const data = await response.json()
+                setMaterials(data)
+            } catch (err) {
+                console.error('Failed to load materials', err)
+            }
+        }
+
+        loadMaterials()
+    }, [])
 
     const handleAsk = async (question) => {
         setLoading(true)
@@ -45,7 +61,7 @@ function AskPage({ onQueryResult }) {
         <div className="ask-page">
             <div className="ask-container">
                 <QuestionInput onSubmit={handleAsk} loading={loading} />
-                <FilterPanel filters={filters} onChange={setFilters} />
+                <FilterPanel filters={filters} onChange={setFilters} materials={materials} />
             </div>
 
             {error && (

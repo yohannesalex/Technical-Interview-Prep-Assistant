@@ -1,6 +1,17 @@
-import { api } from '../services/api'
+import { useState, useEffect } from 'react'
 
-function VerificationReport({ result }) {
+function VerificationReport({ result, activeSourceIndex = null }) {
+    const [currentIndex, setCurrentIndex] = useState(0)
+
+    useEffect(() => {
+        if (activeSourceIndex !== null && activeSourceIndex >= 0) {
+            setCurrentIndex(activeSourceIndex)
+        }
+    }, [activeSourceIndex])
+
+    const sources = result.sources || []
+    const currentSource = sources[currentIndex]
+
     const getStatusColor = (status) => {
         switch (status) {
             case 'passed': return '#10a37f'
@@ -10,106 +21,112 @@ function VerificationReport({ result }) {
         }
     }
 
-    const handleSourceClick = (materialId) => {
-        if (!materialId) return
-        const url = api.getFileUrl(materialId)
-        window.open(url, '_blank')
+    const getSourceLabel = (source) => {
+        if (!source) return ''
+        const parts = []
+        if (source.material_title) parts.push(source.material_title)
+        if (source.section) parts.push(source.section)
+        if (source.page) parts.push(`Page ${source.page}`)
+        return parts.join(' • ')
+    }
+
+    if (sources.length === 0) {
+        return (
+            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                No source information available for this answer.
+            </div>
+        )
     }
 
     return (
-        <div className="verification-report" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            <div className="report-section">
-                <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
-                    Metrics Assessment
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1.5rem' }}>
-                    <div className="assessment-item">
-                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Status</label>
-                        <div
-                            className="status-badge"
-                            style={{
-                                backgroundColor: `${getStatusColor(result.verification_status)}22`,
-                                color: getStatusColor(result.verification_status),
-                                display: 'inline-block'
-                            }}
-                        >
+        <div className="verification-report-full" style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {/* Ultra-Minimal Header */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0 0.5rem 0.5rem',
+                borderBottom: '1px solid var(--border-light)'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div className="status-badge" style={{
+                            backgroundColor: `${getStatusColor(result.verification_status)}22`,
+                            color: getStatusColor(result.verification_status),
+                            fontSize: '0.65rem',
+                            padding: '2px 6px'
+                        }}>
                             {result.verification_status?.toUpperCase()}
                         </div>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                            {currentSource.material_title}
+                        </span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            {currentSource.page ? `• Page ${currentSource.page}` : ''}
+                        </span>
                     </div>
-                    <div className="assessment-item">
-                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Faithfulness</label>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 700, fontFamily: 'var(--font-display)' }}>
-                            {result.faithfulness_score !== null && result.faithfulness_score !== undefined
-                                ? `${(result.faithfulness_score * 100).toFixed(0)}%`
-                                : '--'}
-                        </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginRight: '8px' }}>
+                        Source {currentIndex + 1} of {sources.length}
+                    </span>
+                    <button
+                        disabled={currentIndex === 0}
+                        onClick={() => setCurrentIndex(i => i - 1)}
+                        className="new-chat-btn"
+                        style={{ padding: '4px 12px', width: 'auto', marginBottom: 0, opacity: currentIndex === 0 ? 0.3 : 1, fontSize: '0.8rem' }}
+                    >
+                        Prev
+                    </button>
+                    <button
+                        disabled={currentIndex === sources.length - 1}
+                        onClick={() => setCurrentIndex(i => i + 1)}
+                        className="new-chat-btn"
+                        style={{ padding: '4px 12px', width: 'auto', marginBottom: 0, opacity: currentIndex === sources.length - 1 ? 0.3 : 1, fontSize: '0.8rem' }}
+                    >
+                        Next
+                    </button>
+                </div>
+            </div>
+
+            <div style={{
+                flex: 1,
+                background: 'rgba(18, 18, 21, 0.9)',
+                borderRadius: '8px',
+                border: '1px solid var(--border-light)',
+                padding: '1.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem'
+            }}>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                    {getSourceLabel(currentSource)}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '0.9rem' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '6px' }}>Faithfulness</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 700 }}>{Math.round((result.faithfulness_score || 0) * 100)}%</div>
                     </div>
-                    <div className="assessment-item">
-                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Confidence</label>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 700, fontFamily: 'var(--font-display)' }}>
-                            {result.confidence ? `${(result.confidence * 100).toFixed(0)}%` : '--'}
-                        </div>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '0.9rem' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '6px' }}>Similarity</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 700 }}>{Math.round((currentSource.similarity_score || 0) * 100)}%</div>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '0.9rem' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '6px' }}>Material Type</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 600 }}>{currentSource.material_type || 'unknown'}</div>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '0.9rem' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '6px' }}>Chunk ID</div>
+                        <div style={{ fontSize: '0.85rem', fontFamily: 'var(--font-sans)', wordBreak: 'break-all' }}>{currentSource.chunk_id}</div>
                     </div>
                 </div>
             </div>
 
-            <div className="report-section">
-                <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                    Interpretation
-                </h3>
-                <div style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', borderLeft: `4px solid ${getStatusColor(result.verification_status)}` }}>
-                    {result.verification_status === 'passed' && (
-                        <p>✓ High Reliability: The answer is strictly grounded in your materials. All key claims match verified source documents.</p>
-                    )}
-                    {result.verification_status === 'warning' && (
-                        <p>⚠ Partial Support: Some details could not be explicitly verified in the materials. Use with discretion.</p>
-                    )}
-                    {result.verification_status === 'failed' && (
-                        <p>✗ Low Faithfulness: The response deviates significantly from provided sources. Review the documents below.</p>
-                    )}
-                    {result.verification_status === 'llm_refused' || result.verification_status === 'no_materials' ? (
-                        <p>ℹ Insufficient Data: Your materials do not contain enough information to answer this reliably.</p>
-                    ) : null}
-                </div>
-            </div>
-
-            <div className="report-section">
-                <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                    Reference Sources ({result.sources?.length || 0})
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {result.sources && result.sources.map((source, index) => (
-                        <div
-                            key={source.chunk_id || index}
-                            className="source-card clickable"
-                            onClick={() => handleSourceClick(source.material_id)}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '1rem',
-                                padding: '1rem',
-                                background: 'rgba(255,255,255,0.03)',
-                                borderRadius: '8px',
-                                border: '1px solid var(--border-light)',
-                                cursor: source.material_id ? 'pointer' : 'default',
-                                transition: 'var(--transition)'
-                            }}
-                        >
-                            <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>#{index + 1}</div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{source.material_title}</div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                    {source.page && `Page ${source.page}`}
-                                    {source.section && ` • ${source.section}`}
-                                    {` • ${source.material_type}`}
-                                </div>
-                            </div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--accent-secondary)', fontWeight: 600 }}>
-                                {(source.similarity_score * 100).toFixed(0)}% Match
-                            </div>
-                        </div>
-                    ))}
-                </div>
+            {/* Compact Stats Footer */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', padding: '0.25rem 0' }}>
+                <span>Faithfulness: {(result.faithfulness_score * 100).toFixed(0)}%</span>
+                <span>Match: {(currentSource.similarity_score * 100).toFixed(0)}%</span>
             </div>
         </div>
     )

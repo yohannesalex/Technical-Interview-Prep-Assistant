@@ -4,6 +4,7 @@ import { api } from '../services/api'
 
 function AnswerDisplay({ answer, faithfulnessScore, verificationStatus, confidence, sources }) {
     const [showVerification, setShowVerification] = useState(false)
+    const [activeSourceIndex, setActiveSourceIndex] = useState(null)
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -36,6 +37,58 @@ function AnswerDisplay({ answer, faithfulnessScore, verificationStatus, confiden
         sources: sources
     }
 
+    const buildPreviewUrl = (source) => {
+        if (!source?.material_id) return '#'
+        const snippet = (source.text || '').slice(0, 160)
+        const params = new URLSearchParams({
+            material_id: String(source.material_id),
+            page: String(source.page || 1),
+            title: source.material_title || 'PDF Preview',
+            snippet
+        })
+        const base = `${window.location.origin}${window.location.pathname}`
+        return `${base}#/preview?${params.toString()}`
+    }
+
+    const renderAnswerWithLinks = (text) => {
+        if (!text) return null;
+
+        // Split by lines first to maintain structure
+        return text.split('\n').map((line, lineIdx) => {
+            if (line.trim() === '') return <br key={`br-${lineIdx}`} />;
+
+            // Split line by source tags [Source X]
+            const parts = line.split(/(\[Source \d+\])/g);
+
+            return (
+                <p key={lineIdx} style={{ marginBottom: '0.5rem' }}>
+                    {parts.map((part, partIdx) => {
+                        const match = part.match(/\[Source (\d+)\]/);
+                        if (match) {
+                            const sourceNum = parseInt(match[1]);
+                            const source = sources && sources[sourceNum - 1];
+                            if (source) {
+                                return (
+                                    <a
+                                        key={partIdx}
+                                        className="citation-link"
+                                        href={buildPreviewUrl(source)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title={`Verify with ${source.material_title}`}
+                                    >
+                                        {part}
+                                    </a>
+                                );
+                            }
+                        }
+                        return part;
+                    })}
+                </p>
+            );
+        });
+    };
+
     return (
         <div className="answer-display">
             <div className="answer-header">
@@ -67,33 +120,34 @@ function AnswerDisplay({ answer, faithfulnessScore, verificationStatus, confiden
             </div>
 
             <div className="answer-content">
-                {answer.split('\n').map((line, i) => (
-                    <p key={i} style={{ marginBottom: line.trim() === '' ? '1rem' : '0.5rem' }}>{line}</p>
-                ))}
+                {renderAnswerWithLinks(answer)}
             </div>
 
             {/* Verification Modal */}
             {showVerification && (
                 <div className="verification-modal">
-                    <div className="modal-content">
+                    <div className="modal-content" style={{ maxWidth: '1400px', width: '98vw', height: '94vh', padding: '1.5rem' }}>
                         <button
-                            onClick={() => setShowVerification(false)}
+                            onClick={() => {
+                                setShowVerification(false);
+                                setActiveSourceIndex(null);
+                            }}
                             style={{
                                 position: 'absolute',
-                                top: '1.25rem',
-                                right: '1.25rem',
+                                top: '0.75rem',
+                                right: '1rem',
                                 background: 'transparent',
                                 border: 'none',
                                 color: 'var(--text-secondary)',
                                 fontSize: '1.5rem',
-                                cursor: 'pointer'
+                                cursor: 'pointer',
+                                zIndex: 110
                             }}
                         >
                             &times;
                         </button>
 
-                        <h2 style={{ fontFamily: 'var(--font-display)', marginBottom: '1.5rem' }}>Verification Report</h2>
-                        <VerificationReport result={verificationResult} />
+                        <VerificationReport result={verificationResult} activeSourceIndex={activeSourceIndex} />
 
                         <div style={{ marginTop: '2.5rem', textAlign: 'right' }}>
                             <button onClick={() => setShowVerification(false)} className="new-chat-btn" style={{ display: 'inline-flex', width: 'auto', marginBottom: 0 }}>
