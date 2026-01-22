@@ -7,8 +7,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 import sys
-sys.path.append('..')
 from config import DATABASE_URL
+
+sys.path.append('..')
 
 Base = declarative_base()
 
