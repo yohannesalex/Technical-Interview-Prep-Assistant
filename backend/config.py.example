@@ -35,7 +35,7 @@ BATCH_SIZE = 32  # batch size for embedding generation
 
 # LLM configuration - Using OpenRouter API
 # OpenRouter provides access to multiple high-performance models
-OPENROUTER_API_KEY = "YOUR_API_KEY_HERE"  # Replace with your actual API key
+OPENROUTER_API_KEY = "YOUR_API_KEY_HERE"  # Replace with your actual OPENROUTER API key
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 # Recommended models for RAG (sorted by performance/cost):
@@ -57,7 +57,7 @@ VERIFICATION_ENABLED = True  # enable post-generation verification
 DATABASE_URL = f"sqlite:///{BASE_DIR.parent / 'index' / 'metadata.db'}"
 
 # File upload
-MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB max file size
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
 
 # Supported material types
