@@ -126,7 +126,3 @@ def get_llm_client() -> OpenRouterClient:
     if _openrouter_client is None:
         _openrouter_client = OpenRouterClient()
     return _openrouter_client
-
-
-# Backward compatibility alias
-get_ollama_client = get_llm_client

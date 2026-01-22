@@ -11,7 +11,7 @@ from db import init_db
 from retrieval import get_embedder, get_vector_store, get_reranker
 from api.endpoints import ask, materials, source, logs, admin, chat, files
 from retrieval import get_vector_store
-from llm import get_ollama_client
+from llm import get_llm_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="RAG Interview Assistant API",
-    description="API for checking answers against course materials locally.",
+    description="API for answering technical interview questions using course materials with AI-powered retrieval and verification.",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -76,12 +76,12 @@ async def root():
 
 @app.get("/health")
 async def health():
-    
+    """Health check endpoint."""
     vector_store = get_vector_store()
-    ollama = get_ollama_client()
+    llm_client = get_llm_client()
     
     return {
         "status": "healthy",
         "vector_store_size": vector_store.get_size(),
-        "ollama_available": ollama.check_availability()
+        "llm_available": llm_client.check_availability()
     }

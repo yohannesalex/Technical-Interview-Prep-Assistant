@@ -8,7 +8,7 @@ import sys
 sys.path.append('../..')
 from db import get_db, crud, schema
 from retrieval import get_embedder, get_vector_store, MetadataFilter, get_reranker
-from llm import get_ollama_client, SYSTEM_PROMPT, create_rag_prompt, extract_refusal_keywords
+from llm import get_llm_client, SYSTEM_PROMPT, create_rag_prompt, extract_refusal_keywords
 from verification import get_faithfulness_checker, get_scorer
 from config import TOP_K, RERANK_ENABLED
 
@@ -52,7 +52,7 @@ async def ask_question(
         embedder = get_embedder()
         vector_store = get_vector_store()
         reranker = get_reranker() if RERANK_ENABLED else None
-        ollama = get_ollama_client()
+        llm_client = get_llm_client()
         faithfulness_checker = get_faithfulness_checker()
         scorer = get_scorer()
         
@@ -140,10 +140,13 @@ async def ask_question(
         # Build context with metadata
         context_chunks = []
         sources_info = []
+        missing_chunks = 0
         
         for chunk_id, score in results:
             chunk = crud.get_chunk(db, chunk_id)
             if not chunk:
+                # Chunk in FAISS but not in DB (index out of sync)
+                missing_chunks += 1
                 continue
             
             context_chunks.append({
@@ -163,11 +166,15 @@ async def ask_question(
                 text=chunk.text
             ))
         
+        # Log if we found missing chunks
+        if missing_chunks > 0:
+            print(f"Warning: Found {missing_chunks} chunks in FAISS but not in database. Index may be out of sync.")
+        
         # Create RAG prompt
         prompt = create_rag_prompt(request.question, context_chunks, history=chat_history)
         
         # Generate answer
-        answer = ollama.generate(prompt, system_prompt=SYSTEM_PROMPT)
+        answer = llm_client.generate(prompt, system_prompt=SYSTEM_PROMPT)
         
         # Check for refusal
         if extract_refusal_keywords(answer):
@@ -228,5 +235,37 @@ async def ask_question(
             confidence=sum(s.similarity_score for s in sources_info) / len(sources_info)
         ))
     
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
+        # Log the full error for debugging
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error in /ask endpoint:\n{error_trace}")
+        
+        # Check for common error types and provide helpful messages
+        error_msg = str(e)
+        
+        if "OpenRouter" in error_msg or "API" in error_msg:
+            raise HTTPException(
+                status_code=503,
+                detail=f"The AI service is currently unavailable. {error_msg}"
+            )
+        elif "embedding" in error_msg.lower():
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to process your question. The embedding service may be unavailable."
+            )
+        elif "database" in error_msg.lower() or "sql" in error_msg.lower():
+            raise HTTPException(
+                status_code=500,
+                detail="Database error occurred. Please try again or contact support if the issue persists."
+            )
+        else:
+            # Generic error
+            raise HTTPException(
+                status_code=500,
+                detail=f"An error occurred while processing your question. Please try again. Error: {error_msg}"
+            )
