@@ -1,5 +1,10 @@
 #!/bin/bash
 # Lightweight installation script that avoids downloading full PyTorch
+# 
+# IMPORTANT: Activate your virtual environment first!
+#   source ../venv/bin/activate  (or venv/bin/activate if venv is in backend/)
+#
+# This installs CPU-only PyTorch (~300MB) instead of full PyTorch (~900MB)
 
 echo "Installing lightweight dependencies..."
 
