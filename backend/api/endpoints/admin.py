@@ -29,8 +29,13 @@ async def reindex(db: Session = Depends(get_db)):
         all_chunks = db.query(crud.models.Chunk).all()
         
         if not all_chunks:
+            # If no chunks in DB, clear the vector store
+            vector_store = get_vector_store()
+            vector_store.clear()
+            vector_store.save()
+            
             return schema.ReindexResponse(
-                message="No chunks found in database",
+                message="Database is empty. Index cleared.",
                 chunks_indexed=0,
                 materials_processed=0
             )
@@ -60,3 +65,28 @@ async def reindex(db: Session = Depends(get_db)):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reindexing: {str(e)}")
+
+
+@router.post("/admin/reset")
+async def reset_database(db: Session = Depends(get_db)):
+    """
+    Hard reset: Wipes ALL data and clears the index.
+    """
+    try:
+        # Delete all tables content
+        db.query(crud.models.ChatMessage).delete()
+        db.query(crud.models.ChatSession).delete()
+        db.query(crud.models.QueryLog).delete()
+        db.query(crud.models.Chunk).delete()
+        db.query(crud.models.Material).delete()
+        db.commit()
+        
+        # Clear (empty) the vector store
+        vector_store = get_vector_store()
+        vector_store.clear()
+        vector_store.save()
+        
+        return {"message": "System fully reset. All materials and history deleted."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error resetting system: {str(e)}")

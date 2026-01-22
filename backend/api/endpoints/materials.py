@@ -13,6 +13,7 @@ from db import get_db, crud, schema
 from ingestion import DocumentParser, TextChunker, MetadataExtractor
 from retrieval import get_embedder, get_vector_store
 from config import DATA_DIR, ALLOWED_EXTENSIONS, MAX_FILE_SIZE
+from api.endpoints.admin import reindex
 
 router = APIRouter()
 
@@ -150,7 +151,8 @@ async def delete_material(material_id: int, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(status_code=404, detail="Material not found")
     
-    # Note: This doesn't remove from FAISS index (would require reindexing)
-    # The reindex endpoint can be used to rebuild the index
+    # Automatically reindex to remove vectors
+    # This might be slow for large datasets, but ensures consistency
+    await reindex(db)
     
-    return {"message": "Material deleted. Use /admin/reindex to update the vector index."}
+    return {"message": "Material deleted and index updated."}

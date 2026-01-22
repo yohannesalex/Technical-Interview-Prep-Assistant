@@ -33,5 +33,5 @@ async def get_file(
         path=material.file_path,
         filename=material.filename,
         media_type="application/pdf" if material.filename.lower().endswith(".pdf") else "text/plain",
-        content_disposition_type="inline"
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
     )

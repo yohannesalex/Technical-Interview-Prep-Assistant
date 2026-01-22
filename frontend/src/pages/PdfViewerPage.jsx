@@ -25,7 +25,8 @@ function PdfViewerPage() {
 
     const fileUrl = useMemo(() => {
         if (!params.materialId) return null
-        return api.getFileUrl(params.materialId)
+        // Add timestamp to prevent caching issues when IDs are reused
+        return `${api.getFileUrl(params.materialId)}?t=${new Date().getTime()}`
     }, [params.materialId])
 
     return (
@@ -39,7 +40,6 @@ function PdfViewerPage() {
                     fileUrl={fileUrl}
                     initialPage={params.page}
                     title=""
-                    searchText={params.snippet}
                 />
             </div>
         </div>

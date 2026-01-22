@@ -6,7 +6,7 @@ import workerSrc from 'pdfjs-dist/build/pdf.worker.min?url'
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerSrc
 
-function PdfPreview({ fileUrl, initialPage = 1, title = 'Source Preview', searchText = '' }) {
+function PdfPreview({ fileUrl, initialPage = 1, title = 'Source Preview' }) {
     const containerRef = useRef(null)
     const [pdfInstance, setPdfInstance] = useState(null)
     const [numPages, setNumPages] = useState(null)
@@ -45,83 +45,7 @@ function PdfPreview({ fileUrl, initialPage = 1, title = 'Source Preview', search
         setLoadError(null)
     }
 
-    const normalizeText = (text) => text
-        .replace(/[^a-zA-Z0-9\s]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .toLowerCase()
 
-    const buildSnippetTokens = (text) => {
-        const clean = normalizeText(text)
-        if (!clean) return []
-        const words = clean.split(' ').filter(Boolean)
-        return words.slice(0, 12)
-    }
-
-    const findPageForSnippet = async (tokens, preferredPage) => {
-        if (!pdfInstance || tokens.length === 0) return null
-
-        const total = pdfInstance.numPages || 0
-        const requiredMatches = Math.min(4, tokens.length)
-
-        const scorePage = async (pageIndex) => {
-            const page = await pdfInstance.getPage(pageIndex)
-            const content = await page.getTextContent()
-            const pageText = normalizeText(content.items.map((item) => item.str).join(' '))
-
-            let matches = 0
-            for (const token of tokens) {
-                if (pageText.includes(token)) {
-                    matches += 1
-                }
-            }
-
-            return { pageIndex, matches }
-        }
-
-        const candidates = []
-
-        if (preferredPage && preferredPage >= 1 && preferredPage <= total) {
-            candidates.push(await scorePage(preferredPage))
-        }
-
-        for (let i = 1; i <= total; i += 1) {
-            if (i === preferredPage) continue
-            candidates.push(await scorePage(i))
-        }
-
-        const best = candidates.reduce((acc, curr) => (curr.matches > acc.matches ? curr : acc), { pageIndex: null, matches: 0 })
-
-        if (best.pageIndex && best.matches >= requiredMatches) {
-            return best.pageIndex
-        }
-
-        return null
-    }
-
-    useEffect(() => {
-        let isActive = true
-
-        const runSearch = async () => {
-            if (!pdfInstance || !searchText) return
-
-            const tokens = buildSnippetTokens(searchText)
-            if (tokens.length === 0) return
-
-            const currentPage = Number.parseInt(initialPage, 10)
-            const foundPage = await findPageForSnippet(tokens, Number.isFinite(currentPage) ? currentPage : null)
-
-            if (isActive && foundPage && foundPage !== pageNumber) {
-                setPageNumber(foundPage)
-            }
-        }
-
-        runSearch()
-
-        return () => {
-            isActive = false
-        }
-    }, [pdfInstance, searchText, initialPage])
 
     const goToPrev = () => setPageNumber((p) => Math.max(1, p - 1))
     const goToNext = () => setPageNumber((p) => Math.min(numPages || p + 1, p + 1))

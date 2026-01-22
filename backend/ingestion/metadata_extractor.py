@@ -105,6 +105,8 @@ class MetadataExtractor:
         
         if page:
             metadata['page'] = page
+        elif 'page' in base_metadata:
+            metadata['page'] = base_metadata['page']
         
         return metadata
     
