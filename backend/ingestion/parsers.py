@@ -25,7 +25,8 @@ class PDFParser:
         
         for page_num in range(len(doc)):
             page = doc[page_num]
-            text = page.get_text()
+            # Use "text" to get plain text, and replace common odd characters
+            text = page.get_text("text").encode("ascii", "ignore").decode("ascii")
             
             pages.append({
                 'page': page_num + 1,

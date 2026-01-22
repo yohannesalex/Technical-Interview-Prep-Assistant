@@ -173,6 +173,18 @@ def get_chat_history(db: Session, session_id: str) -> List[models.ChatMessage]:
     return db.query(models.ChatMessage).filter(models.ChatMessage.session_id == session_id).order_by(models.ChatMessage.timestamp.asc()).all()
 
 
+def get_recent_chat_history(db: Session, session_id: str, limit: int = 20) -> List[models.ChatMessage]:
+    """Get the most recent messages for a session in chronological order."""
+    messages = (
+        db.query(models.ChatMessage)
+        .filter(models.ChatMessage.session_id == session_id)
+        .order_by(models.ChatMessage.timestamp.desc())
+        .limit(limit)
+        .all()
+    )
+    return list(reversed(messages))
+
+
 def get_query_log(db: Session, log_id: int) -> Optional[models.QueryLog]:
     """Get a query log by ID."""
     return db.query(models.QueryLog).filter(models.QueryLog.id == log_id).first()

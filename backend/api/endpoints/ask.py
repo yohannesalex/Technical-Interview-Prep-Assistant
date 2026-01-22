@@ -31,12 +31,22 @@ async def ask_question(
         Query response with answer, sources, and verification info
     """
     try:
-        # Handle Chat Session: User Message
+        # Handle Chat Session: Validate and collect recent history
+        chat_history = []
         if request.session_id:
             session = crud.get_chat_session(db, request.session_id)
             if not session:
                 raise HTTPException(status_code=404, detail="Session not found")
+            chat_history = crud.get_recent_chat_history(db, request.session_id, limit=20)
             crud.create_chat_message(db, request.session_id, "user", request.question)
+
+        # Drop the current user message from history if it was just added
+        if chat_history:
+            last_message = chat_history[-1]
+            last_role = getattr(last_message, 'role', None) or last_message.get('role')
+            last_content = getattr(last_message, 'content', None) or last_message.get('content')
+            if last_role == "user" and last_content == request.question:
+                chat_history = chat_history[:-1]
 
         # Get components
         embedder = get_embedder()
@@ -45,8 +55,20 @@ async def ask_question(
         faithfulness_checker = get_faithfulness_checker()
         scorer = get_scorer()
         
+        # Build a history-aware retrieval query (use prior USER messages only)
+        retrieval_query = request.question
+        if chat_history:
+            recent_user_msgs = [
+                (getattr(msg, 'content', None) or msg.get('content'))
+                for msg in chat_history
+                if (getattr(msg, 'role', None) or msg.get('role')) == "user"
+            ]
+            recent_user_msgs = [m for m in recent_user_msgs if m]
+            if recent_user_msgs:
+                retrieval_query = " ".join([request.question] + recent_user_msgs[-3:])
+        
         # Embed query
-        query_embedding = embedder.embed_text(request.question)
+        query_embedding = embedder.embed_text(retrieval_query)
         
         # Retrieve chunks
         top_k = request.top_k or TOP_K
@@ -67,7 +89,7 @@ async def ask_question(
 
         if not results:
             return save_and_return(schema.QueryResponse(
-                answer="I don't have any materials to answer this question. Please upload course materials first.",
+                answer="I don't have enough information in the context you provided.",
                 sources=[],
                 faithfulness_score=0.0,
                 verification_status="no_materials",
@@ -89,7 +111,7 @@ async def ask_question(
         
         if not results:
             return save_and_return(schema.QueryResponse(
-                answer="No materials match your filters. Try adjusting the filters or uploading more materials.",
+                answer="I don't have enough information in the context you provided.",
                 sources=[],
                 faithfulness_score=0.0,
                 verification_status="no_matches",
@@ -118,11 +140,12 @@ async def ask_question(
                 page=chunk.chunk_metadata.get('page'),
                 section=chunk.chunk_metadata.get('section'),
                 material_type=chunk.chunk_metadata.get('material_type', 'unknown'),
-                similarity_score=score
+                similarity_score=score,
+                text=chunk.text
             ))
         
         # Create RAG prompt
-        prompt = create_rag_prompt(request.question, context_chunks)
+        prompt = create_rag_prompt(request.question, context_chunks, history=chat_history)
         
         # Generate answer
         answer = ollama.generate(prompt, system_prompt=SYSTEM_PROMPT)

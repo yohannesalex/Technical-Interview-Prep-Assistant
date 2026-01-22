@@ -53,6 +53,7 @@ class SourceInfo(BaseModel):
     section: Optional[str] = None
     material_type: str
     similarity_score: float
+    text: Optional[str] = None
 
 
 class QueryRequest(BaseModel):

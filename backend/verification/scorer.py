@@ -83,12 +83,7 @@ class FaithfulnessScorer:
         Returns:
             Refusal message
         """
-        return (
-            "I cannot provide a reliable answer to this question based on the available materials. "
-            f"The generated response had a low faithfulness score ({evaluation.get('score', 0):.2f}), "
-            "indicating that many claims could not be verified against the source documents. "
-            "Please try rephrasing your question or check if the relevant materials have been uploaded."
-        )
+        return "I don't have enough information in the context you provided."
 
 
 def get_scorer() -> FaithfulnessScorer:
