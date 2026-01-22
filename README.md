@@ -113,20 +113,24 @@ Frontend will run on `http://localhost:5173`
 1. Navigate to the **Ask Question** tab
 2. Type your technical interview question
 3. Optionally apply filters:
+   - Materials (multi-select; leave empty to search all)
    - Material Type
    - Lecture Number
-   - Topic
 4. Click **Ask Question**
 5. Review answer with sources and verification status
 
 ### 3. Verification
 
-1. After asking a question, navigate to **Verification** tab
-2. Review:
+1. After asking a question, open **Verification**
+2. Review numeric metrics:
    - Faithfulness score
-   - Verification status
-   - Source details
+   - Similarity score
+   - Material type and chunk ID
 3. Export results as JSON for grading/evaluation
+
+### 4. Source Preview
+
+- Clicking a citation opens the PDF in a **new browser tab** with a fullscreen preview.
 
 ## ⚙️ Configuration
 
@@ -325,4 +329,3 @@ For issues or questions, please check:
 
 ---
 
-**Built with ❤️ for local-first, privacy-preserving AI**
